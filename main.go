@@ -15,6 +15,8 @@ var (
 	material rl.Material
 )
 
+var isDebug = false
+
 func main() {
 	screenWidth := int32(1280)
 	screenHeight := int32(720)
@@ -31,8 +33,11 @@ func main() {
 	chunk.GenerateFlat(4)
 	mesh = chunk.GenerateMesh()
 
-	maps := make([]rl.MaterialMap, 12)
-	maps[0].Color = rl.NewColor(120, 200, 80, 255)
+	maps := make([]rl.MaterialMap, rl.MaxMaterialMaps)
+	maps[rl.MapAlbedo].Color = rl.White
+
+	grassTex := rl.LoadTexture("assets/grass-top.png")
+	maps[rl.MapAlbedo].Texture = grassTex
 
 	material = rl.Material{}
 	material.Shader = rl.LoadShader("", "")
@@ -50,6 +55,10 @@ func main() {
 func update(cam *camera.FPSCamera) {
 	dt := rl.GetFrameTime()
 	cam.Update(dt)
+
+	if rl.GetKeyPressed() == rl.KeyThree {
+		isDebug = !isDebug
+	}
 }
 
 func draw(cam *camera.FPSCamera) {
@@ -58,8 +67,13 @@ func draw(cam *camera.FPSCamera) {
 
 	rl.BeginMode3D(cam.RaylibCamera())
 	rl.DrawMesh(mesh, material, rl.MatrixTranslate(0, 0, 0))
-	drawTrianglesDebug(mesh)
+
+	if isDebug {
+		drawTrianglesDebug(mesh)
+	}
+
 	rl.DrawGrid(50, 1)
+
 	rl.EndMode3D()
 
 	rl.DrawFPS(10, 10)
@@ -90,7 +104,7 @@ func drawTrianglesDebug(mesh rl.Mesh) {
 		v2 := rl.NewVector3(vertSlice[i2], vertSlice[i2+1], vertSlice[i2+2])
 
 		// Fill triangle (optional, for visibility)
-		rl.DrawTriangle3D(v0, v1, v2, rl.NewColor(255, 0, 0, 80))
+		// rl.DrawTriangle3D(v0, v1, v2, rl.NewColor(255, 0, 0, 80))
 
 		// Wireframe outline
 		rl.DrawLine3D(v0, v1, rl.Black)
