@@ -32,6 +32,39 @@ var templateUVs = [4][2]float32{
 	{0, 1},
 }
 
+type UVRegion struct {
+	MinU, MinV float32
+	MaxU, MaxV float32
+}
+
+var oneThird = float32(1) / float32(3)
+var twoThirds = float32(2) / float32(3)
+
+var grassTopRegion = UVRegion{0, 0, oneThird, 1}
+var grassSideRegion = UVRegion{oneThird, 0, twoThirds, 1}
+var grassBottomRegion = UVRegion{twoThirds, 0, 1, 1}
+
+var grassSideUVs = [4][2]float32{
+	{grassSideRegion.MinU, grassSideRegion.MinV},
+	{grassSideRegion.MaxU, grassSideRegion.MinV},
+	{grassSideRegion.MaxU, grassSideRegion.MaxV},
+	{grassSideRegion.MinU, grassSideRegion.MaxV},
+}
+
+var grassTopUVs = [4][2]float32{
+	{grassTopRegion.MinU, grassTopRegion.MinV},
+	{grassTopRegion.MaxU, grassTopRegion.MinV},
+	{grassTopRegion.MaxU, grassTopRegion.MaxV},
+	{grassTopRegion.MinU, grassTopRegion.MaxV},
+}
+
+var grassBottomUVs = [4][2]float32{
+	{grassBottomRegion.MinU, grassBottomRegion.MinV},
+	{grassBottomRegion.MaxU, grassBottomRegion.MinV},
+	{grassBottomRegion.MaxU, grassBottomRegion.MaxV},
+	{grassBottomRegion.MinU, grassBottomRegion.MaxV},
+}
+
 type FaceTemplate struct {
 	Vertices [4][3]float32
 	Normals  [3]float32
@@ -47,7 +80,7 @@ var faceRightTemplate = FaceTemplate{
 		{0.5, 0.5, 0.5},   // TL
 	},
 	Normals: [3]float32{1, 0, 0},
-	UVs:     templateUVs,
+	UVs:     grassSideUVs,
 	Indices: templateIndices,
 }
 
@@ -59,7 +92,7 @@ var faceLeftTemplate = FaceTemplate{
 		{-0.5, 0.5, -0.5},  // TL
 	},
 	Normals: [3]float32{-1, 0, 0},
-	UVs:     templateUVs,
+	UVs:     grassSideUVs,
 	Indices: templateIndices,
 }
 
@@ -71,7 +104,7 @@ var faceTopTemplate = FaceTemplate{
 		{0.5, 0.5, -0.5},
 	},
 	Normals: [3]float32{0, 1, 0},
-	UVs:     templateUVs,
+	UVs:     grassTopUVs,
 	Indices: templateIndices,
 }
 
@@ -83,7 +116,7 @@ var faceBottomTemplate = FaceTemplate{
 		{-0.5, -0.5, 0.5},
 	},
 	Normals: [3]float32{0, -1, 0},
-	UVs:     templateUVs,
+	UVs:     grassBottomUVs,
 	Indices: templateIndices,
 }
 
@@ -95,7 +128,7 @@ var faceFrontTemplate = FaceTemplate{
 		{-0.5, 0.5, 0.5},
 	},
 	Normals: [3]float32{0, 0, 1},
-	UVs:     templateUVs,
+	UVs:     grassSideUVs,
 	Indices: templateIndices,
 }
 
@@ -107,7 +140,7 @@ var faceBackTemplate = FaceTemplate{
 		{0.5, 0.5, -0.5},
 	},
 	Normals: [3]float32{0, 0, -1},
-	UVs:     templateUVs,
+	UVs:     grassSideUVs,
 	Indices: templateIndices,
 }
 

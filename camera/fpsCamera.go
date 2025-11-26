@@ -7,91 +7,117 @@ import (
 )
 
 type FPSCamera struct {
-	Position    rl.Vector3
-	Yaw         float32
-	Pitch       float32
-	MoveSpeed   float32
-	Sensitivity float32
+	Position rl.Vector3
+	Yaw      float32
+	Pitch    float32
+
+	Speed    float32
+	Sens     float32
+	MaxPitch float32
 }
 
 func NewFPSCamera(pos rl.Vector3) *FPSCamera {
 	return &FPSCamera{
-		Position:    pos,
-		Yaw:         0,
-		Pitch:       0,
-		MoveSpeed:   5,
-		Sensitivity: 0.003,
-	}
-}
-
-func (c *FPSCamera) Forward() rl.Vector3 {
-	return rl.NewVector3(
-		float32(math.Cos(float64(c.Pitch)))*float32(math.Sin(float64(c.Yaw))),
-		float32(math.Sin(float64(c.Pitch))),
-		float32(math.Cos(float64(c.Pitch)))*float32(math.Cos(float64(c.Yaw))),
-	)
-}
-
-func (c *FPSCamera) Right() rl.Vector3 {
-	f := c.Forward()
-	return rl.NewVector3(-f.Z, 0, f.X)
-}
-
-func (c *FPSCamera) Up() rl.Vector3 {
-	return rl.NewVector3(0, 1, 0)
-}
-
-func (c *FPSCamera) Update(dt float32) {
-	mouse := rl.GetMouseDelta()
-
-	c.Yaw -= mouse.X * c.Sensitivity
-	c.Pitch -= mouse.Y * c.Sensitivity
-
-	limit := float32(math.Pi/2 - 0.01)
-	if c.Pitch > limit {
-		c.Pitch = limit
-	}
-	if c.Pitch < -limit {
-		c.Pitch = -limit
-	}
-
-	if c.Yaw > math.Pi {
-		c.Yaw -= 2 * math.Pi
-	} else if c.Yaw < -math.Pi {
-		c.Yaw += 2 * math.Pi
-	}
-
-	move := rl.NewVector3(0, 0, 0)
-	f := c.Forward()
-	r := c.Right()
-
-	if rl.IsKeyDown(rl.KeyW) {
-		move = rl.Vector3Add(move, f)
-	}
-	if rl.IsKeyDown(rl.KeyS) {
-		move = rl.Vector3Subtract(move, f)
-	}
-	if rl.IsKeyDown(rl.KeyD) {
-		move = rl.Vector3Add(move, r)
-	}
-	if rl.IsKeyDown(rl.KeyA) {
-		move = rl.Vector3Subtract(move, r)
-	}
-
-	if rl.Vector3Length(move) > 0 {
-		move = rl.Vector3Normalize(move)
-		move = rl.Vector3Scale(move, c.MoveSpeed*dt)
-		c.Position = rl.Vector3Add(c.Position, move)
+		Position: pos,
+		Yaw:      0,
+		Pitch:    0,
+		Speed:    8.0,
+		Sens:     0.0025,
+		MaxPitch: 1.55, // ~89 degrees
 	}
 }
 
 func (c *FPSCamera) RaylibCamera() rl.Camera3D {
-	f := c.Forward()
 	return rl.Camera3D{
-		Position:   c.Position,
-		Target:     rl.Vector3Add(c.Position, f),
+		Position: c.Position,
+		Target: rl.Vector3{
+			X: c.Position.X + float32(math.Cos(float64(c.Pitch)))*float32(math.Sin(float64(c.Yaw))),
+			Y: c.Position.Y + float32(math.Sin(float64(c.Pitch))),
+			Z: c.Position.Z + float32(math.Cos(float64(c.Pitch)))*float32(math.Cos(float64(c.Yaw))),
+		},
 		Up:         rl.NewVector3(0, 1, 0),
-		Fovy:       75,
+		Fovy:       60.0,
 		Projection: rl.CameraPerspective,
 	}
+}
+
+func (c *FPSCamera) Forward() rl.Vector3 {
+	return rl.Vector3{
+		X: float32(math.Cos(float64(c.Pitch))) * float32(math.Sin(float64(c.Yaw))),
+		Y: float32(math.Sin(float64(c.Pitch))),
+		Z: float32(math.Cos(float64(c.Pitch))) * float32(math.Cos(float64(c.Yaw))),
+	}
+}
+
+func (c *FPSCamera) Update(dt float32) {
+	// --------------------------------------------------
+	// Mouse Look — correct non-inverted yaw direction
+	// --------------------------------------------------
+	dx := rl.GetMouseDelta().X
+	dy := rl.GetMouseDelta().Y
+
+	c.Yaw -= dx * c.Sens
+	c.Pitch -= dy * c.Sens
+
+	if c.Pitch > c.MaxPitch {
+		c.Pitch = c.MaxPitch
+	}
+	if c.Pitch < -c.MaxPitch {
+		c.Pitch = -c.MaxPitch
+	}
+
+	// --------------------------------------------------
+	// Minecraft-style Movement (XZ only) with normalization
+	// --------------------------------------------------
+	yaw := c.Yaw
+
+	forward := rl.Vector3{
+		X: float32(math.Sin(float64(yaw))),
+		Y: 0,
+		Z: float32(math.Cos(float64(yaw))),
+	}
+
+	right := rl.Vector3{
+		X: float32(-math.Cos(float64(yaw))),
+		Y: 0,
+		Z: float32(math.Sin(float64(yaw))),
+	}
+
+	move := rl.Vector3{X: 0, Y: 0, Z: 0}
+
+	// Accumulate movement direction
+	if rl.IsKeyDown(rl.KeyW) {
+		move = rl.Vector3Add(move, forward)
+	}
+	if rl.IsKeyDown(rl.KeyS) {
+		move = rl.Vector3Subtract(move, forward)
+	}
+	if rl.IsKeyDown(rl.KeyA) {
+		move = rl.Vector3Subtract(move, right)
+	}
+	if rl.IsKeyDown(rl.KeyD) {
+		move = rl.Vector3Add(move, right)
+	}
+
+	// Vertical movement (optional creative mode)
+	if rl.IsKeyDown(rl.KeySpace) {
+		move.Y += 1
+	}
+	if rl.IsKeyDown(rl.KeyLeftShift) {
+		move.Y -= 1
+	}
+
+	// Normalize diagonal movement
+	length := float32(math.Sqrt(float64(move.X*move.X + move.Y*move.Y + move.Z*move.Z)))
+	if length > 0.0001 {
+		move.X /= length
+		move.Y /= length
+		move.Z /= length
+	}
+
+	// Apply movement
+	speed := c.Speed * dt
+	c.Position.X += move.X * speed
+	c.Position.Y += move.Y * speed
+	c.Position.Z += move.Z * speed
 }

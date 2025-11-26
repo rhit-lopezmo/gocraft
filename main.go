@@ -36,7 +36,10 @@ func main() {
 	maps := make([]rl.MaterialMap, rl.MaxMaterialMaps)
 	maps[rl.MapAlbedo].Color = rl.White
 
-	grassTex := rl.LoadTexture("assets/grass-top.png")
+	grassTex := rl.LoadTexture("assets/grass-atlas.png")
+	// grassBottom := rl.LoadTexture("assets/grass-bottom.png")
+	// grassSide := rl.LoadTexture("assets/grass-side.png")
+
 	maps[rl.MapAlbedo].Texture = grassTex
 
 	material = rl.Material{}
